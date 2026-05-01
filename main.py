@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
+from contextlib import asynccontextmanager
 from config import BOT_TOKEN, RENDER_URL
 from database import handle_user_start
 from auth import get_login_url
@@ -22,7 +23,17 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 ptb_app.add_handler(CommandHandler("start", start_command))
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Set webhook automatically on startup
+    webhook_url = f"{RENDER_URL}/{BOT_TOKEN}"
+    await ptb_app.bot.set_webhook(url=webhook_url)
+    logging.info(f"Webhook set to {webhook_url}")
+    await ptb_app.start()
+    yield
+    await ptb_app.stop()
+
+app = FastAPI(lifespan=lifespan)
 
 @app.post(f"/{BOT_TOKEN}")
 async def telegram_webhook(request: Request):
