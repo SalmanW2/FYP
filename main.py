@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from contextlib import asynccontextmanager
@@ -7,6 +7,7 @@ from config import BOT_TOKEN, RENDER_URL
 from database import handle_user_start
 from auth import get_login_url
 import logging
+
 
 ptb_app = Application.builder().token(BOT_TOKEN).build()
 
@@ -64,6 +65,53 @@ async def google_callback(request: Request):
     else:
         return RedirectResponse(url=f"/callback_success?msg={result_data}&success=false")
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def root():
-    return {"message": "Smart Email Assistant is running!"}
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Smart Email Assistant</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background-color: #0f172a;
+                color: #e2e8f0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+            }
+            .container {
+                text-align: center;
+                background: #1e293b;
+                padding: 40px;
+                border-radius: 15px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            }
+            h1 { color: #38bdf8; margin-bottom: 10px; }
+            p { font-size: 1.1em; color: #94a3b8; }
+            .status {
+                display: inline-block;
+                margin-top: 20px;
+                padding: 8px 15px;
+                background-color: #22c55e;
+                color: white;
+                border-radius: 20px;
+                font-weight: bold;
+                font-size: 0.9em;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🤖 Smart Email Assistant</h1>
+            <p>Your Agentic AI backend is active and listening.</p>
+            <div class="status">● System Online</div>
+        </div>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content, status_code=200)
