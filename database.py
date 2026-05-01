@@ -2,7 +2,7 @@ import logging
 import uuid
 import hashlib
 import os
-import requests
+import httpx
 from config import SUPABASE_URL, SUPABASE_KEY, get_utc_now
 
 SUPABASE_URL = SUPABASE_URL.rstrip('/')
@@ -14,11 +14,16 @@ HEADERS = {
 
 def _request(method, path, json=None):
     url = f"{SUPABASE_URL}/rest/v1/{path}"
-    resp = requests.request(method, url, headers=HEADERS, json=json)
-    if resp.status_code >= 400:
-        logging.error(f"Supabase error {resp.status_code}: {resp.text}")
+    try:
+        with httpx.Client() as client:
+            resp = client.request(method, url, headers=HEADERS, json=json)
+            if resp.status_code >= 400:
+                logging.error(f"Supabase error {resp.status_code}: {resp.text}")
+                return None
+            return resp.json() if resp.content else None
+    except Exception as e:
+        logging.error(f"HTTPX Request Error: {e}")
         return None
-    return resp.json() if resp.content else None
 
 def is_blocked(block_type, value):
     result = _request("GET", f"blocked_users?block_type=eq.{block_type}&block_value=eq.{value}&select=id")

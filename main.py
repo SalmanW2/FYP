@@ -25,13 +25,17 @@ ptb_app.add_handler(CommandHandler("start", start_command))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Set webhook automatically on startup
     webhook_url = f"{RENDER_URL}/{BOT_TOKEN}"
     await ptb_app.bot.set_webhook(url=webhook_url)
     logging.info(f"Webhook set to {webhook_url}")
+    
+    await ptb_app.initialize()  # Added: Required before start()
     await ptb_app.start()
+    
     yield
+    
     await ptb_app.stop()
+    await ptb_app.shutdown()    # Added: Clean cleanup
 
 app = FastAPI(lifespan=lifespan)
 
